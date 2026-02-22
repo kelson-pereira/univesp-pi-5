@@ -20,27 +20,27 @@
         {% for device in devices %}
         <div class="col-md-6">
             <div class="card border-0 shadow-lg h-100">
-                <div class="card-body position-relative">
+                <div class="card-body position-relative pt-2">
                     <div class="card-actions position-absolute top-0 end-0 p-2">
                         <!-- Edit -->
-                        <span class="icon-wrapper">
+                        <span class="icon-wrapper edit-wrapper" data-device-id="{{ device.id }}">
                             <i class="bi bi-pencil edit-icon"></i>
                             <i class="bi bi-pencil-fill edit-fill-icon"
-                            title="Editar título"
-                            data-device-id="{{ device.id }}"></i>
+                            title="Editar título"></i>
                         </span>
                         <!-- Delete -->
-                        <span class="icon-wrapper">
+                        <span class="icon-wrapper delete-wrapper" data-device-id="{{ device.id }}">
                             <i class="bi bi-trash delete-icon"></i>
                             <i class="bi bi-trash-fill delete-fill-icon"
-                            title="Apagar dados"
-                            data-device-id="{{ device.id }}"></i>
+                            title="Apagar dados"></i>
                         </span>
                     </div>
-                    <div class="text-muted fs-6 fw-bold text-center lh-sm mb-3">{{ device.name }}</div>
+                    <div class="text-center mb-2 lh-sm device-name-container" data-device-id="{{ device.id }}" style="margin: 0 72px 0 72px;">
+                        <input type="text" class="form-control form-control-sm fs-6 fw-bold text-muted text-center border-0 bg-transparent device-name-input" value="{{ device.name }}" readonly>
+                    </div>
                     {% if device.current is not None %}
                         <div class="d-flex flex-row align-items-center justify-content-center mb-3">
-                            <div class="d-flex align-self-stretch align-items-center fs-1 fw-bold text-end text-white lh-sm px-2 rounded-start-3
+                            <div class="d-flex align-self-stretch align-items-center fs-1 fw-bold text-end text-white px-2 rounded-start-3
                                 {% if device.tensao == 'ELEVADA' %}
                                     bg-danger
                                 {% elif device.tensao == 'BAIXA' %}
@@ -51,8 +51,8 @@
                                 {{ device.current | floatformat:2 }}
                             </div>
                             <div class="d-flex flex-column align-self-stretch bg-body-secondary px-2">
-                                <small class="h-50 align-content-end"><strong>Máx:</strong> {{ device.max_24h | floatformat:2 }}</small>
-                                <small class="h-50 align-content-start"><strong>Mín:</strong> {{ device.min_24h | floatformat:2 }}</small>
+                                <small class="h-50 align-content-end lh-sm"><strong>Máx:</strong> {{ device.max_24h | floatformat:2 }}</small>
+                                <small class="h-50 align-content-start lh-sm"><strong>Mín:</strong> {{ device.min_24h | floatformat:2 }}</small>
                             </div>
                             <div class="align-self-stretch align-content-center text-white fw-semibold bg-black px-2 rounded-end-3">
                                 {{ device.unit }}
@@ -188,65 +188,141 @@
         });
     });
 
+    // ===============================
+    // INLINE EDIT COM ESTADO
+    // ===============================
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.edit-wrapper')
+            .forEach(wrapper => {
 
-    document.querySelectorAll('.edit-icon').forEach(icon => {
-        icon.addEventListener('click', () => {
-            const container = icon.closest('.device-name-container');
-            const nameEl = container.querySelector('.device-name');
-            const input = container.querySelector('.edit-input');
-            const actions = container.parentElement.querySelector('.edit-actions');
-
-            nameEl.style.display = 'none';
-            icon.style.display = 'none';
-            input.style.display = 'block';
-            actions.style.display = 'flex';
-            input.focus();
-
-            const originalValue = input.value;
-
-            function cancelEdit() {
-                input.value = originalValue;
-                nameEl.style.display = '';
-                icon.style.display = '';
-                input.style.display = 'none';
-                actions.style.display = 'none';
-            }
-
-            function saveEdit() {
-                const newName = input.value.trim();
-                if (!newName) return;
-                fetch(`/device/${icon.dataset.mac}/edit_name/`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
-                    body: JSON.stringify({name: newName})
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        nameEl.textContent = data.name;
-                        nameEl.style.display = '';
-                        icon.style.display = '';
-                        input.style.display = 'none';
-                        actions.style.display = 'none';
-                    } else {
-                        alert(data.error || 'Erro ao atualizar');
+                function preventBlur(e) {
+                    if (wrapper.classList.contains('editing')) {
+                        e.preventDefault();
                     }
-                })
-                .catch(() => alert('Erro de conexão'));
+                }
+
+                // Desktop e Mobile
+                wrapper.addEventListener('pointerdown', preventBlur);
+
+                wrapper.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    if (wrapper.classList.contains('editing')) {
+                        confirmEdit(wrapper);
+                    } else {
+                        enableEdit(wrapper);
+                    }
+                });
+            });
+    });
+
+
+    function enableEdit(wrapper) {
+        const deviceId = wrapper.dataset.deviceId;
+        const container = document.querySelector(
+            `.device-name-container[data-device-id="${deviceId}"]`
+        );
+        const input = container.querySelector('.device-name-input');
+        input.dataset.originalValue = input.value;
+        wrapper.classList.add('editing');
+        setEditable(input, true);
+        input.focus();
+        const length = input.value.length;
+        input.setSelectionRange(length, length);
+        let isSubmitting = false;
+
+        function keyHandler(e) {
+            if (isSubmitting) return;
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                isSubmitting = true;
+                confirmEdit(wrapper);
             }
 
-            actions.querySelector('.cancel-btn').onclick = cancelEdit;
-            actions.querySelector('.save-btn').onclick = saveEdit;
+            if (e.key === 'Escape') {
+                input.value = input.dataset.originalValue;
+                finalize();
+            }
+        }
 
-            input.onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    saveEdit();
-                } else if (e.key === 'Escape') {
-                    cancelEdit();
-                }
-            };
+        function blurHandler() {
+            if (!wrapper.classList.contains('editing')) return;
+            if (isSubmitting) return;
+            input.value = input.dataset.originalValue;
+            finalize();
+        }
+
+        function finalize() {
+            setEditable(input, false);
+            wrapper.classList.remove('editing');
+            input.removeEventListener('keydown', keyHandler);
+            input.removeEventListener('keyup', keyHandler);
+            input.removeEventListener('blur', blurHandler);
+        }
+
+        input.addEventListener('keydown', keyHandler);
+        input.addEventListener('keyup', keyHandler);
+        input.addEventListener('blur', blurHandler);
+    }
+
+    function setEditable(input, state) {
+        if (state) {
+            input.removeAttribute('readonly');
+            input.classList.remove('bg-transparent');
+            input.classList.add('bg-white', 'editing');
+        } else {
+            input.setAttribute('readonly', true);
+            input.classList.remove('bg-white', 'editing');
+            input.classList.add('bg-transparent');
+        }
+    }
+
+    function saveEdit(deviceId, input, callback) {
+        const newName = input.value.trim();
+        if (!newName) return;
+        fetch(`/device/${deviceId}/edit_name/`, {
+            method: 'POST',
+            credentials: "same-origin",
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ name: newName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                alert(data.error || "Erro ao salvar");
+                return;
+            }
+            callback();
+        })
+        .catch(() => alert("Erro de conexão"));
+    }
+
+    function confirmEdit(wrapper) {
+        if (wrapper.dataset.saving === "true") return;
+        wrapper.dataset.saving = "true";
+        const deviceId = wrapper.dataset.deviceId;
+        const container = document.querySelector(
+            `.device-name-container[data-device-id="${deviceId}"]`
+        );
+        const input = container.querySelector('.device-name-input');
+        const newValue = input.value.trim();
+        if (!newValue) {
+            wrapper.dataset.saving = "false";
+            return;
+        }
+        saveEdit(deviceId, input, () => {
+            input.dataset.originalValue = newValue;
+            input.defaultValue = newValue;
+            setEditable(input, false);
+            wrapper.classList.remove('editing');
+            wrapper.dataset.saving = "false";
+            input.blur();
         });
-    });
+    }
 
     function getCookie(name) {
         let cookieValue = null;

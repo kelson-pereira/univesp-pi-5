@@ -11,8 +11,11 @@ body {
 }
 
 .icon-wrapper {
+    will-change: transform;
     position: relative;
-    transition: background-color 0.2s, transform 0.15s ease;
+    transition: 
+        transform 0.25s cubic-bezier(.4,0,.2,1),
+        background-color 0.2s ease;
     border-radius: 50% !important;
     padding: 6px;
     width: 32px;
@@ -47,4 +50,41 @@ body {
 
 .icon-wrapper:hover .edit-fill-icon, .icon-wrapper:hover .delete-fill-icon {
     opacity: 1;
+}
+
+.icon-wrapper.editing {
+    background-color: #198754; /* verde bootstrap */
+    transform: scale(1.08);
+}
+
+/* Enquanto editando, esconder ambos ícones originais */
+.icon-wrapper.editing .edit-icon,
+.icon-wrapper.editing .edit-fill-icon {
+    opacity: 0 !important;
+}
+
+.icon-wrapper.editing::after {
+    content: "\F26E"; /* bi-check-lg */
+    font-family: "bootstrap-icons";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+}
+
+/* Hover enquanto editando (verde mais escuro) */
+.icon-wrapper.editing:hover {
+    background-color: #157347;
+}
+
+.device-name-input {
+    transition: all 0.25s ease;
+}
+
+.device-name-input.editing {
+    transform: scale(1.03);
+    box-shadow: 0 0 0 2px rgba(13,110,253,.25);
 }

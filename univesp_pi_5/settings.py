@@ -45,8 +45,11 @@ if not IS_HEROKU_APP:
 if IS_HEROKU_APP:
     ALLOWED_HOSTS = ["*"]
     SECURE_SSL_REDIRECT = False
+    CSRF_COOKIE_SECURE = True
 else:
     ALLOWED_HOSTS = ["*"]
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Application definition
 
