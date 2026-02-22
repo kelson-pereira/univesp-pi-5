@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block css %}
+        <link rel="stylesheet" href="{% static 'css/default.css' %}">
+{% endblock %}
+
+{% block title %}VoltGuard{% endblock %}
+
+{% block content %}
+<div class="container py-4 text-white">
+    <!-- Logo -->
+    <div class="text-center mb-4">
+        <img src="{% static 'imagens/voltguard.svg' %}" alt="VoltGuard" style="max-width: 220px;" />
+    </div>
+
+    <p class="text-center text-light opacity-75 mb-3">Pontos de Medição</p>
+
+    <div class="row g-6 justify-content-center mb-3">
+        {% for device in devices %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg h-100">
+                <div class="card-body position-relative">
+                    <div class="card-actions position-absolute top-0 end-0 p-2">
+                        <!-- Edit -->
+                        <span class="icon-wrapper">
+                            <i class="bi bi-pencil edit-icon"></i>
+                            <i class="bi bi-pencil-fill edit-fill-icon"
+                            title="Editar título"
+                            data-device-id="{{ device.id }}"></i>
+                        </span>
+                        <!-- Delete -->
+                        <span class="icon-wrapper">
+                            <i class="bi bi-trash delete-icon"></i>
+                            <i class="bi bi-trash-fill delete-fill-icon"
+                            title="Apagar dados"
+                            data-device-id="{{ device.id }}"></i>
+                        </span>
+                    </div>
+                    <div class="text-muted fs-6 fw-bold text-center lh-sm mb-3">{{ device.name }}</div>
+                    {% if device.current is not None %}
+                        <div class="d-flex flex-row align-items-center justify-content-center mb-3">
+                            <div class="d-flex align-self-stretch align-items-center fs-1 fw-bold text-end text-white lh-sm px-2 rounded-start-3
+                                {% if device.tensao == 'ELEVADA' %}
+                                    bg-danger
+                                {% elif device.tensao == 'BAIXA' %}
+                                    bg-warning
+                                {% else %}
+                                    bg-success
+                                {% endif %}">
+                                {{ device.current | floatformat:2 }}
+                            </div>
+                            <div class="d-flex flex-column align-self-stretch bg-body-secondary px-2">
+                                <small class="h-50 align-content-end"><strong>Máx:</strong> {{ device.max_24h | floatformat:2 }}</small>
+                                <small class="h-50 align-content-start"><strong>Mín:</strong> {{ device.min_24h | floatformat:2 }}</small>
+                            </div>
+                            <div class="align-self-stretch align-content-center text-white fw-semibold bg-black px-2 rounded-end-3">
+                                {{ device.unit }}
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de barras (24h - buckets de 10min) -->
+                        <div class="mt-2 overflow-x-auto" style="height: 100px;">
+                            <svg class="device-chart" data-device-id="{{ device.id }}" data-chart-min="{{ device.chart_min }}" data-chart-max="{{ device.chart_max }}" width="100%" height="100%" preserveAspectRatio="none">
+                            </svg>
+                            <script type="application/json" class="chart-data-{{ device.id|slugify }}">
+                            {{ device.chart_data|safe }}
+                            </script>
+                        </div>
+                        <small class="d-block text-center text-muted opacity-50 mt-2">Últimas 24h (média a cada 10min)</small>
+                    {% else %}
+                        <div class="d-flex flex-column align-items-center justify-content-center mt-4 text-muted" style="min-height: 200px;">
+                            <span class="text-dark badge bg-warning">
+                                Sem dados disponíveis
+                            </span>
+                            <div class="mt-2 text-muted"><small><i class="bi bi-cpu-fill me-2"></i><span class="lh-sm fw-normal">{{device.id}}</span></small></div>
+                            <div class="mt-4 text-center w-75">Verifique se a fonte de alimentação está ativa e se o dispositivo está conectado à Internet.</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Deseja apagar este dispositivo e todos os dados de sensores associados?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Apagar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal QRCode -->
+<div class="modal fade" id="qrcodeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-header">
+                <h5 class="modal-title">QRCode do Dashboard</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <img src="{% static 'imagens/voltguard.svg' %}" alt="VoltGuard"/>
+                </div>
+                <img id="qrcodeImage" src="" alt="QRCode" class="img-fluid"/>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Renderizar gráficos de barras
+    function renderChart(svg, chartData, chartMin, chartMax) {
+        // Segurança contra range zero
+        if (chartMax <= chartMin) {
+            chartMax = chartMin + 1;
+        }
+        svg.innerHTML = '';
+        svg.setAttribute('viewBox', '0 0 100 100');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        if (!svg || !chartData.length) {
+            svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', '50');
+            text.setAttribute('y', '50');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('font-size', '12pt');
+            text.setAttribute('fill', '#6c757d');
+            text.setAttribute('opacity', '0.8');
+            text.textContent = 'Sem dados';
+            svg.appendChild(text);
+            return;
+        }
+        const barWidth = (100 / chartData.length);
+        const range = chartMax - chartMin;
+        let colorCounts = { red: 0, green: 0, blue: 0, gray: 0 };
+        chartData.forEach((item, index) => {
+            const x = (index * barWidth);
+            let height = 5; // valor mínimo visual
+            if (item.value !== null && item.value !== undefined) {
+                const normalized = (item.value - chartMin) / range;
+                height = Math.max(2, Math.min(100, normalized * 100));
+            }
+            const y = 100 - height;
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', x);
+            rect.setAttribute('y', y);
+            rect.setAttribute('width', barWidth * 0.9);
+            rect.setAttribute('height', height);
+            let color = '#999';
+            if (item.color === 'red') color = '#dc3545';
+            if (item.color === 'yellow') color = '#ffab11';
+            if (item.color === 'green') color = '#55d400';
+            rect.setAttribute('fill', color);
+            rect.setAttribute('opacity', '0.85');
+            rect.setAttribute('class', 'bar');
+            rect.setAttribute('title', `${item.time} - ${item.value ?? '-'}V`);
+            svg.appendChild(rect);
+            colorCounts[item.color]++;
+        });
+    }
+
+    // Inicializar gráficos - esperar o DOM estar pronto
+    document.addEventListener('DOMContentLoaded', function() {
+        const charts = document.querySelectorAll('.device-chart');
+        charts.forEach((svg) => {
+            const deviceId = svg.getAttribute('data-device-id');
+            const slugId = deviceId.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const scriptTag = document.querySelector(`.chart-data-${slugId}`)
+            const chartData = JSON.parse(scriptTag.textContent);
+            const chartMin = parseFloat(svg.getAttribute('data-chart-min'));
+            const chartMax = parseFloat(svg.getAttribute('data-chart-max'));
+            renderChart(svg, chartData, chartMin, chartMax);
+        });
+    });
+
+
+    document.querySelectorAll('.edit-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            const container = icon.closest('.device-name-container');
+            const nameEl = container.querySelector('.device-name');
+            const input = container.querySelector('.edit-input');
+            const actions = container.parentElement.querySelector('.edit-actions');
+
+            nameEl.style.display = 'none';
+            icon.style.display = 'none';
+            input.style.display = 'block';
+            actions.style.display = 'flex';
+            input.focus();
+
+            const originalValue = input.value;
+
+            function cancelEdit() {
+                input.value = originalValue;
+                nameEl.style.display = '';
+                icon.style.display = '';
+                input.style.display = 'none';
+                actions.style.display = 'none';
+            }
+
+            function saveEdit() {
+                const newName = input.value.trim();
+                if (!newName) return;
+                fetch(`/device/${icon.dataset.mac}/edit_name/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')},
+                    body: JSON.stringify({name: newName})
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        nameEl.textContent = data.name;
+                        nameEl.style.display = '';
+                        icon.style.display = '';
+                        input.style.display = 'none';
+                        actions.style.display = 'none';
+                    } else {
+                        alert(data.error || 'Erro ao atualizar');
+                    }
+                })
+                .catch(() => alert('Erro de conexão'));
+            }
+
+            actions.querySelector('.cancel-btn').onclick = cancelEdit;
+            actions.querySelector('.save-btn').onclick = saveEdit;
+
+            input.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    saveEdit();
+                } else if (e.key === 'Escape') {
+                    cancelEdit();
+                }
+            };
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Verifica se o cookie começa com o nome desejado
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    let macToDelete = null;
+
+    document.querySelectorAll('.delete-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            macToDelete = icon.dataset.mac;
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            modal.show();
+        });
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+        if (!macToDelete) return;
+        fetch(`/device/${macToDelete}/delete/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // recarrega lista após apagar
+            } else {
+                alert(data.error || 'Erro ao apagar');
+            }
+        })
+        .catch(() => alert('Erro de conexão'));
+    });
+
+    document.querySelectorAll('.qrcode-icon').forEach(icon => {
+        icon.addEventListener('click', () => {
+            const mac = icon.dataset.mac;
+            fetch(`/device/${mac}/qrcode/`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('qrcodeImage').src = "data:image/png;base64," + data.qrcode;
+                        const modal = new bootstrap.Modal(document.getElementById('qrcodeModal'));
+                        modal.show();
+                    } else {
+                        alert(data.error || 'Erro ao gerar QRCode');
+                    }
+                })
+                .catch(() => alert('Erro de conexão'));
+        });
+    });
+
+</script>
+{% endblock %}

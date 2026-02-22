@@ -1,0 +1,50 @@
+body {
+  background: radial-gradient(circle at top center, #1E2766 0%, #0C0F27 70%);
+}
+
+:root {
+  --bs-teal: #008080; /* azul-petróleo */
+}
+
+.fs-7 {
+  font-size: .75rem;
+}
+
+.icon-wrapper {
+    position: relative;
+    transition: background-color 0.2s, transform 0.15s ease;
+    border-radius: 50% !important;
+    padding: 6px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.edit-fill-icon, .delete-fill-icon {
+    position: absolute;
+    inset: 0; /* ocupa toda a área */
+    display: flex;
+    align-items: center;
+    justify-content: center; /* centraliza */
+    opacity: 0;
+}
+
+.icon-wrapper:hover .edit-fill-icon {
+  color: #0d6efd; /* azul bootstrap */
+}
+
+.icon-wrapper:hover .delete-fill-icon {
+  color: #dc3545; /* vermelho bootstrap */
+}
+
+/* Hover troca */
+.icon-wrapper:hover .edit-icon, .icon-wrapper:hover .delete-icon {
+    opacity: 0;
+}
+
+.icon-wrapper:hover .edit-fill-icon, .icon-wrapper:hover .delete-fill-icon {
+    opacity: 1;
+}
