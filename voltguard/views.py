@@ -137,8 +137,6 @@ def home(request):
             chart_max = 240
 
         current = device.current_value
-        if current is not None:
-            current = random.uniform(200.00, 240.00)  # Simulação de valor atual
 
         tensao = "NORMAL"
         if current is not None:
