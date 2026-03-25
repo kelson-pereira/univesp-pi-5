@@ -89,11 +89,11 @@ def home(request):
         )
 
         if stats["min_10min"] is not None and stats["max_10min"] is not None:
-            chart_min = max(215, stats["min_10min"] - 2)
-            chart_max = min(225, stats["max_10min"] + 2)
+            chart_min = max(200, stats["min_10min"] - 2)
+            chart_max = min(240, stats["max_10min"] + 2)
         else:
-            chart_min = 215
-            chart_max = 225
+            chart_min = 200
+            chart_max = 240
 
         current = device.current_value
 
