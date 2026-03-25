@@ -99,9 +99,9 @@ def home(request):
 
         tensao = "NORMAL"
         if current is not None:
-            if current > sensor_type.max_value:
+            if current > 225:
                 tensao = "ELEVADA"
-            if current < sensor_type.min_value:
+            if current < 215:
                 tensao = "BAIXA"
 
         # Gerar dados do gráfico
