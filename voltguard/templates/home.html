@@ -340,31 +340,39 @@
         return cookieValue;
     }
 
+    // ===============================
+    // DELETE COM CONFIRMAÇÃO
+    // ===============================
     let macToDelete = null;
 
-    document.querySelectorAll('.delete-icon').forEach(icon => {
-        icon.addEventListener('click', () => {
-            macToDelete = icon.dataset.mac;
-            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-            modal.show();
-        });
-    });
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.delete-wrapper')
+            .forEach(wrapper => {
+                wrapper.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    macToDelete = wrapper.dataset.deviceId;
+                    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+                    modal.show();
+                });
+            });
 
-    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
-        if (!macToDelete) return;
-        fetch(`/device/${macToDelete}/delete/`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken')}
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                location.reload(); // recarrega lista após apagar
-            } else {
-                alert(data.error || 'Erro ao apagar');
-            }
-        })
-        .catch(() => alert('Erro de conexão'));
+        document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+            if (!macToDelete) return;
+            fetch(`/device/${macToDelete}/delete/`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Erro ao apagar');
+                }
+            })
+            .catch(() => alert('Erro de conexão'));
+        });
     });
 
     document.querySelectorAll('.qrcode-icon').forEach(icon => {
