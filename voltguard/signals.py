@@ -24,8 +24,8 @@ def seed_initial_data(sender, **kwargs):
         defaults={
             "description": "Tensão elétrica fase A",
             "unit": "Volts",
-            "min_value": 210.0,
-            "max_value": 230.0,
+            "min_value": 215.0,
+            "max_value": 225.0,
             "order": 1
         }
     )
