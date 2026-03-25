@@ -29,9 +29,9 @@ def get_chart_data(device, sensor_type, last_10min, now):
 
     for created_at, value in sensors:
         # Definir cor direto no ponto (sem agregação)
-        if value > sensor_type.max_value:
+        if value > 225:
             color = "red"
-        elif value < sensor_type.min_value + 15:
+        elif value < 215:
             color = "yellow"
         else:
             color = "green"
@@ -110,7 +110,7 @@ def home(request):
         devices_data.append({
             "id": device.mac_address,
             "name": device.name,
-            "current": round(current, 2) if current else None,
+            "current": round(current, 2) if current is not None else None,
             "min_10min": round(stats["min_10min"], 2) if stats["min_10min"] else None,
             "max_10min": round(stats["max_10min"], 2) if stats["max_10min"] else None,
             "unit": sensor_type.unit,
