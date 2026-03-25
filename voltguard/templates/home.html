@@ -16,7 +16,7 @@
 
     <p class="text-center text-light opacity-75 mb-3">Pontos de Medição</p>
 
-    <div class="row g-6 justify-content-center mb-3">
+    <div class="row g-6 justify-content-center">
         {% for device in devices %}
         <div class="col-md-6">
             <div class="card border-0 shadow-lg h-100 mb-4">
@@ -68,7 +68,7 @@
                             {{ device.chart_data|safe }}
                             </script>
                         </div>
-                        <small class="d-block text-center text-muted opacity-50 mt-2">Últimas 24h (média a cada 10min)</small>
+                        <small class="d-block text-center text-muted opacity-50 mt-2">Últimos 10 minutos</small>
                     {% else %}
                         <div class="d-flex flex-column align-items-center justify-content-center mt-4 text-muted" style="min-height: 190px;">
                             <span class="text-dark badge bg-warning">
