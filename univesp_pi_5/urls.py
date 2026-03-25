@@ -24,5 +24,6 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("favicon.ico", RedirectView.as_view(url="/static/imagens/favicon.ico", permanent=True)),
     path("device/<str:mac>/edit_name/", views.edit_device_name, name="edit_device_name"),
+    path("device/<str:mac>/delete/", views.delete_device, name="delete_device"),
     path("update/", views.update, name="update"),
 ]

@@ -166,6 +166,16 @@ def home(request):
     })
 
 @require_POST
+def delete_device(request, mac):
+    try:
+        device = Device.objects.get(mac_address=mac)
+    except Device.DoesNotExist:
+        return JsonResponse({'error': 'Dispositivo não encontrado'}, status=404)
+
+    device.delete()
+    return JsonResponse({'success': True})
+
+@require_POST
 def edit_device_name(request, mac):
     try:
         device = Device.objects.get(mac_address=mac)
