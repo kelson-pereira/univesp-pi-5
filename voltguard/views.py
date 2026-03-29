@@ -221,12 +221,12 @@ def update(request):
             except SensorType.DoesNotExist:
                 continue  # ignora sensores não cadastrados
 
-            # 🔒 Filtro de valores inválidos
+            # Filtro de valores inválidos
             if value < 0 or value > 250:
                 print(f"[IGNORADO] Valor fora da faixa: {value}V ({mac_address})")
                 continue
 
-            # 🔒 Filtro de Spike (variação brusca)
+            # Filtro de Spike (variação brusca)
             last = (
                 Sensor.objects
                 .filter(device=device, sensor_type=sensor_type)
@@ -239,7 +239,7 @@ def update(request):
                     print(f"[IGNORADO] Spike detectado: {value}V (último: {last.value}V)")
                     continue
 
-            # ✅ SALVA SOMENTE DADO VÁLIDO
+            # Salva somente valores válidos
             Sensor.objects.create(
                 device=device,
                 sensor_type=sensor_type,
