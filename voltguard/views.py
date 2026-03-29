@@ -171,9 +171,17 @@ def update(request):
     updated_now = (timezone.now() - device.updated_at).total_seconds() < 60
 
     # Salva dados dos sensores (mantendo histórico de 12h)
-    from datetime import timedelta
+    
     if "sensors" in data:
         now = timezone.now()
+
+        # Mantém apenas últimos 20 minutos
+        cutoff = now - timedelta(minutes=20)
+        Sensor.objects.filter(
+            device=device,
+            created_at__lt=cutoff
+        ).delete()
+        
         for sensor in data['sensors']:
             sensor_type_name = sensor.get('type')
             value = sensor.get('value')
@@ -185,9 +193,6 @@ def update(request):
                 sensor_type = SensorType.objects.get(name=sensor_type_name)
             except SensorType.DoesNotExist:
                 continue  # ignora sensores não cadastrados
-
-            # Remove dados mais antigos que 12h para este sensor/dispositivo
-            Sensor.objects.filter(device=device,sensor_type=sensor_type,created_at__lt=now - timedelta(hours=12)).delete()
 
             # Salva novo dado (não substitui)
             Sensor.objects.create(device=device,sensor_type=sensor_type,value=value,)
