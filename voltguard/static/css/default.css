@@ -95,13 +95,14 @@ body {
 }
 
 .table-container {
-    overflow: hidden;
+    overflow-y: auto;
     transition: max-height 0.3s ease;
     max-height: 500px;
 }
 
 .table-container.collapsed {
     max-height: 0;
+    overflow: hidden;
 }
 
 .table-toggle {
