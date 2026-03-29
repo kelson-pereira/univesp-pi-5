@@ -37,7 +37,7 @@ def get_chart_data(device, sensor_type, last_10min, now):
             color = "green"
 
         chart_data.append({
-            "time": created_at.strftime("%H:%M:%S"),
+            "time": created_at.strftime("%d/%m/%Y %H:%M:%S"),
             "value": round(value, 2),
             "color": color
         })
