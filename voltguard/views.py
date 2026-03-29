@@ -1,5 +1,5 @@
 from datetime import timedelta
-import random
+from collections import defaultdict
 from django.utils import timezone
 from django.http import JsonResponse
 from django.db.models import Min, Max, OuterRef, Subquery
@@ -13,9 +13,9 @@ from .models import Device, Sensor, SensorType
 # Create your views here.
 
 def get_chart_data(device, sensor_type, last_10min, now):
-    interval = 5  # segundos
+    interval = 10  # segundos
     total_seconds = int((now - last_10min).total_seconds())
-    total_slots = total_seconds // interval  # ~120
+    total_slots = total_seconds // interval  # ~60 slots de 10s em 10 minutos
 
     # Busca dados reais
     sensors = (
@@ -30,13 +30,15 @@ def get_chart_data(device, sensor_type, last_10min, now):
         .values_list("created_at", "value")
     )
 
-    # Indexar por slot
-    slot_map = {}
+    # Cria slot para indexar valores por intervalo de 10s
+    slot_map = defaultdict(list)
 
+    # Preencher valores nos slots correspondentes
     for created_at, value in sensors:
         delta = int((created_at - last_10min).total_seconds())
-        slot_index = delta // interval
-        slot_map[slot_index] = (created_at, value)
+        # slot_index = delta // interval
+        slot_index = max(0, min(delta // interval, total_slots))
+        slot_map[slot_index].append((created_at, value))
 
     chart_data = []
 
@@ -44,7 +46,13 @@ def get_chart_data(device, sensor_type, last_10min, now):
         slot_time = last_10min + timedelta(seconds=i * interval)
 
         if i in slot_map:
-            created_at, value = slot_map[i]
+            values = [v for _, v in slot_map[i]]
+
+            # Se houver zero, prioriza zero (garante que queda de energia não seja suavizada pela média)
+            if 0 in values:
+                value = 0
+            else:
+                value = sum(values) / len(values)  # média
 
             if value == 0:
                 color = "black"
@@ -56,7 +64,7 @@ def get_chart_data(device, sensor_type, last_10min, now):
                 color = "green"
 
             chart_data.append({
-                "time": created_at.strftime("%d/%m/%Y %H:%M:%S"),
+                "time": slot_time.strftime("%d/%m/%Y %H:%M:%S"),
                 "value": round(value, 2),
                 "color": color
             })
@@ -70,8 +78,14 @@ def get_chart_data(device, sensor_type, last_10min, now):
 
     return chart_data
 
+def floor_time(dt, seconds=10):
+    return dt - timedelta(
+        seconds=dt.second % seconds,
+        microseconds=dt.microsecond
+    )
+
 def home(request):
-    now = timezone.now()
+    now = floor_time(timezone.now(), 10)
     last_10min = now - timedelta(minutes=10)
 
     try:
@@ -235,9 +249,11 @@ def update(request):
             )
 
             if last:
-                if abs(value - last.value) > 50:
-                    print(f"[IGNORADO] Spike detectado: {value}V (último: {last.value}V)")
-                    continue
+                # Ignora spike APENAS se ambos valores forem diferentes de zero
+                if last.value != 0 and value != 0:
+                    if abs(value - last.value) > 50:
+                        print(f"Spike detectado (ignorando): {value}V (último: {last.value}V)")
+                        continue
 
             # Salva somente valores válidos
             Sensor.objects.create(
