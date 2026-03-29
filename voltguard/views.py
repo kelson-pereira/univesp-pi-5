@@ -105,7 +105,7 @@ def get_table_data(device, sensor_type, last_10min, now):
             color = "green"
 
         table_data.append({
-            "time": created_at.strftime("%d/%m/%Y %H:%M:%S"),
+            "time": created_at.strftime("%d/%m %H:%M:%S"),
             "value": round(value, 2),
             "color": color
         })

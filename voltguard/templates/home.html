@@ -82,7 +82,7 @@
                                     <thead>
                                         <tr>
                                             <th>Data/Hora</th>
-                                            <th>Tensão (Volts)</th>
+                                            <th>Tensão</th>
                                             <th>Status</th>
                                         </tr>
                                     </thead>
@@ -277,7 +277,7 @@
             tdTime.textContent = item.time;
 
             const tdValue = document.createElement('td');
-            tdValue.textContent = Number(item.value).toFixed(2);
+            tdValue.textContent = Number(item.value).toFixed(2) + ' V';
 
             const tdStatus = document.createElement('td');
 
