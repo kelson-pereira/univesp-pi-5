@@ -39,33 +39,5 @@ def seed_initial_data(sender, **kwargs):
     # Se já houver sensores para esse device, não recriar
     if Sensor.objects.filter(device=device, sensor_type=sensor_type).exists():
         print("Dados já existem. Seed ignorado.")
-        return
-
-    print("Gerando 24h de dados simulados...")
-
-    now = timezone.now()
-    start_time = now - timedelta(hours=24, minutes=1)
-
-    sensors = []
-    current_time = start_time
-    count = 0
-
-    while current_time <= now:
-        value = round(random.uniform(200.0, 240.0), 2)
-
-        sensors.append(
-            Sensor(
-                sensor_type=sensor_type,
-                device=device,
-                value=value,
-                created_at=current_time  # Definindo manualmente
-            )
-        )
-
-        current_time += timedelta(seconds=10)
-        count += 1
-
-    # Inserção em lote
-    Sensor.objects.bulk_create(sensors, batch_size=1000)
-
-    print(f"{count} sensores criados com sucesso.")
+    else:
+        print("Seed concluído com sucesso.")
