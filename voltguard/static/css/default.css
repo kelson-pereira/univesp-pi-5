@@ -88,3 +88,36 @@ body {
     transform: scale(1.03);
     box-shadow: 0 0 0 2px rgba(13,110,253,.25);
 }
+
+.bar:hover {
+    opacity: 1;
+    cursor: pointer;
+}
+
+.table-container {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    max-height: 500px;
+}
+
+.table-container.collapsed {
+    max-height: 0;
+}
+
+.table-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.data-table td.status-green,
+.table td.status-green {
+    color: #198754 !important;
+}
+
+.table td.status-red {
+    color: #dc3545 !important;
+}
+
+.table td.status-yellow {
+    color: #ffab11 !important;
+}

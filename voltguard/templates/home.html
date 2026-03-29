@@ -69,6 +69,25 @@
                             </script>
                         </div>
                         <small class="d-block text-center text-muted opacity-50 mt-2">Últimos 10 minutos</small>
+                        <!-- Tabela de dados -->
+                        <div class="mt-2">
+                            <div class="table-toggle text-center text-primary small" onclick="toggleTable(this)">
+                                ▼ Ver dados
+                            </div>
+                            <div class="table-container collapsed">
+                                <table class="table table-sm table-striped mt-2 mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Data/Hora</th>
+                                            <th>Tensão (Volts)</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="chart-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!-- Fim do conteúdo quando há dados -->
                     {% else %}
                         <div class="d-flex flex-column align-items-center justify-content-center mt-4 text-muted" style="min-height: 190px;">
                             <span class="text-dark badge bg-warning">
@@ -168,7 +187,9 @@
             rect.setAttribute('fill', color);
             rect.setAttribute('opacity', '0.85');
             rect.setAttribute('class', 'bar');
-            rect.setAttribute('title', `${item.time} - ${item.value ?? '-'}V`);
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `${item.time} - ${item.value ?? '-'}V`;
+            rect.appendChild(title);
             svg.appendChild(rect);
             colorCounts[item.color]++;
         });
@@ -185,6 +206,7 @@
             const chartMin = parseFloat(svg.getAttribute('data-chart-min'));
             const chartMax = parseFloat(svg.getAttribute('data-chart-max'));
             renderChart(svg, chartData, chartMin, chartMax);
+            renderTable(svg, chartData);
         });
     });
 
@@ -216,6 +238,60 @@
             });
     });
 
+    function toggleTable(el) {
+        const container = el.nextElementSibling;
+        container.classList.toggle('collapsed');
+
+        el.textContent = container.classList.contains('collapsed')
+            ? '▼ Ver dados'
+            : '▲ Ocultar dados';
+    }
+
+    function renderTable(svg, chartData) {
+        const cardBody = svg.closest('.card-body');
+        const tbody = cardBody.querySelector('.chart-table-body');
+
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+
+        chartData.reverse().forEach(item => {
+            const tr = document.createElement('tr');
+
+            const tdTime = document.createElement('td');
+            tdTime.textContent = item.time;
+
+            const tdValue = document.createElement('td');
+            tdValue.textContent = item.value ?? '-';
+
+            const tdStatus = document.createElement('td');
+
+            let statusText = 'Indefinido';
+            let statusClass = '';
+
+            if (item.color === 'green') {
+                statusText = 'Normal';
+                statusClass = 'status-green';
+            }
+            if (item.color === 'red') {
+                statusText = 'Sobretensão';
+                statusClass = 'status-red';
+            }
+            if (item.color === 'yellow') {
+                statusText = 'Subtensão';
+                statusClass = 'status-yellow';
+            }
+
+            tdStatus.textContent = statusText;
+            tdStatus.className = statusClass;
+
+            tr.appendChild(tdTime);
+            tr.appendChild(tdValue);
+            tr.appendChild(tdStatus);
+
+            tbody.appendChild(tr);
+        });
+    }
 
     function enableEdit(wrapper) {
         const deviceId = wrapper.dataset.deviceId;
