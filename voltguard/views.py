@@ -78,6 +78,40 @@ def get_chart_data(device, sensor_type, last_10min, now):
 
     return chart_data
 
+def get_table_data(device, sensor_type, last_10min, now):
+    sensors = (
+        Sensor.objects
+        .filter(
+            device=device,
+            sensor_type=sensor_type,
+            created_at__gte=last_10min,
+            created_at__lte=now
+        )
+        .order_by("-created_at")  # mais recente primeiro
+        .values_list("created_at", "value")
+    )
+
+    table_data = []
+
+    for created_at, value in sensors:
+
+        if value == 0:
+            color = "black"
+        elif value > 225:
+            color = "red"
+        elif value < 215:
+            color = "yellow"
+        else:
+            color = "green"
+
+        table_data.append({
+            "time": created_at.strftime("%d/%m/%Y %H:%M:%S"),
+            "value": round(value, 2),
+            "color": color
+        })
+
+    return table_data
+
 def floor_time(dt, seconds=10):
     return dt - timedelta(
         seconds=dt.second % seconds,
@@ -145,8 +179,11 @@ def home(request):
             if current < 215:
                 tensao = "BAIXA"
 
-        # Gerar dados do gráfico
+        # Gerar dados do gráfico (últimos 10 minutos) - Slot de 10s para suavisar e prevenir falhas de leitura
         chart_data = get_chart_data(device, sensor_type, last_10min, now)
+
+        # Gerar dados da tabela (últimos 10 minutos)
+        table_data = get_table_data(device, sensor_type, last_10min, now)
 
         devices_data.append({
             "id": device.mac_address,
@@ -159,6 +196,7 @@ def home(request):
             "chart_data": json.dumps(chart_data),
             "chart_min": chart_min,
             "chart_max": chart_max,
+            "table_data": json.dumps(table_data),
         })
 
     return render(request, "home.html", {

@@ -71,6 +71,9 @@
                         <small class="d-block text-center text-muted opacity-50 mt-2">Últimos 10 minutos</small>
                         <!-- Tabela de dados -->
                         <div class="mt-2">
+                            <script type="application/json" class="table-data-{{ device.id|slugify }}">
+                                {{ device.table_data|safe }}
+                            </script>
                             <div class="table-toggle text-center text-primary small" onclick="toggleTable(this)">
                                 ▼ Ver dados
                             </div>
@@ -215,7 +218,9 @@
             const chartMin = parseFloat(svg.getAttribute('data-chart-min'));
             const chartMax = parseFloat(svg.getAttribute('data-chart-max'));
             renderChart(svg, chartData, chartMin, chartMax);
-            renderTable(svg, chartData);
+            const tableScript = document.querySelector(`.table-data-${slugId}`);
+            const tableData = JSON.parse(tableScript.textContent);
+            renderTable(svg, tableData);
         });
     });
 
@@ -256,7 +261,7 @@
             : '▲ Ocultar dados';
     }
 
-    function renderTable(svg, chartData) {
+    function renderTable(svg, tableData) {
         const cardBody = svg.closest('.card-body');
         const tbody = cardBody.querySelector('.chart-table-body');
 
@@ -264,10 +269,7 @@
 
         tbody.innerHTML = '';
 
-        [...chartData].reverse().forEach(item => {
-
-            // ignora apenas ausência de leitura
-            if (item.value === null || item.value === undefined) return;
+        tableData.forEach(item => {
 
             const tr = document.createElement('tr');
 
