@@ -264,37 +264,34 @@
 
         tbody.innerHTML = '';
 
-        chartData.reverse().forEach(item => {
-            if (item.value === null || item.value === undefined) {
-                return; // ignora slot vazio
-            }
+        [...chartData].reverse().forEach(item => {
+
+            // ignora apenas ausência de leitura
+            if (item.value === null || item.value === undefined) return;
+
             const tr = document.createElement('tr');
 
             const tdTime = document.createElement('td');
             tdTime.textContent = item.time;
 
             const tdValue = document.createElement('td');
-            tdValue.textContent = item.value ?? '-';
+            tdValue.textContent = Number(item.value).toFixed(2);
 
             const tdStatus = document.createElement('td');
 
-            let statusText = 'Indefinido';
+            let statusText = '';
             let statusClass = '';
 
-            if (item.color === 'black') {
+            if (item.value === 0) {
                 statusText = 'Sem tensão';
                 statusClass = 'status-black';
-            }
-
-            if (item.color === 'green') {
+            } else if (item.color === 'green') {
                 statusText = 'Normal';
                 statusClass = 'status-green';
-            }
-            if (item.color === 'red') {
+            } else if (item.color === 'red') {
                 statusText = 'Sobretensão';
                 statusClass = 'status-red';
-            }
-            if (item.color === 'yellow') {
+            } else if (item.color === 'yellow') {
                 statusText = 'Subtensão';
                 statusClass = 'status-yellow';
             }
