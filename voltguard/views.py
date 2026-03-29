@@ -29,7 +29,9 @@ def get_chart_data(device, sensor_type, last_10min, now):
 
     for created_at, value in sensors:
         # Definir cor direto no ponto (sem agregação)
-        if value > 225:
+        if value == 0:
+            color = "black"
+        elif value > 225:
             color = "red"
         elif value < 215:
             color = "yellow"

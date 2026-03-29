@@ -121,3 +121,8 @@ body {
 .table td.status-yellow {
     color: #ffab11 !important;
 }
+
+.table td.status-black {
+    color: #000000 !important;
+    font-weight: 600;
+}

@@ -181,6 +181,7 @@
             rect.setAttribute('width', barWidth * 0.9);
             rect.setAttribute('height', height);
             let color = '#999';
+            if (item.color === 'black') color = '#000000';
             if (item.color === 'red') color = '#dc3545';
             if (item.color === 'yellow') color = '#ffab11';
             if (item.color === 'green') color = '#198754';
@@ -188,7 +189,11 @@
             rect.setAttribute('opacity', '0.85');
             rect.setAttribute('class', 'bar');
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-            title.textContent = `${item.time} - ${item.value ?? '-'}V`;
+            let label = `${item.time} - ${item.value ?? '-'}V`;
+            if (item.value === 0) {
+                label = `${item.time} - SEM TENSÃO`;
+            }
+            title.textContent = label;
             rect.appendChild(title);
             svg.appendChild(rect);
             colorCounts[item.color]++;
@@ -268,6 +273,11 @@
 
             let statusText = 'Indefinido';
             let statusClass = '';
+
+            if (item.color === 'black') {
+                statusText = 'Sem tensão';
+                statusClass = 'status-black';
+            }
 
             if (item.color === 'green') {
                 statusText = 'Normal';
