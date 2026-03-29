@@ -91,7 +91,7 @@
                     {% else %}
                         <div class="d-flex flex-column align-items-center justify-content-center mt-4 text-muted" style="min-height: 190px;">
                             <span class="text-dark badge bg-warning">
-                                Sem dados disponíveis
+                                Sem dados recentes disponíveis
                             </span>
                             <div class="mt-4 text-center w-75">Verifique se a fonte de alimentação está ativa e se o dispositivo está conectado à Internet.</div>
                         </div>
@@ -170,7 +170,7 @@
         chartData.forEach((item, index) => {
             const x = (index * barWidth);
             let height = 5; // valor mínimo visual
-            if (item.value !== null && item.value !== undefined) {
+            if (item.value !== null && item.value !== undefined && item.value !== 0) {
                 const normalized = (item.value - chartMin) / range;
                 height = Math.max(2, Math.min(100, normalized * 100));
             }
@@ -180,7 +180,7 @@
             rect.setAttribute('y', y);
             rect.setAttribute('width', barWidth * 0.9);
             rect.setAttribute('height', height);
-            let color = '#999';
+            let color = '#cccccc';
             if (item.color === 'black') color = '#000000';
             if (item.color === 'red') color = '#dc3545';
             if (item.color === 'yellow') color = '#ffab11';
@@ -189,9 +189,13 @@
             rect.setAttribute('opacity', '0.85');
             rect.setAttribute('class', 'bar');
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-            let label = `${item.time} - ${item.value ?? '-'}V`;
-            if (item.value === 0) {
-                label = `${item.time} - SEM TENSÃO`;
+            let label = '';
+            if (item.value === null || item.value === undefined) {
+                label = `${item.time} - Sem leitura`;
+            } else if (item.value === 0) {
+                label = `${item.time} - Sem tensão`;
+            } else {
+                label = `${item.time} - ${item.value} Volts`;
             }
             title.textContent = label;
             rect.appendChild(title);
@@ -261,6 +265,9 @@
         tbody.innerHTML = '';
 
         chartData.reverse().forEach(item => {
+            if (item.value === null || item.value === undefined) {
+                return; // ignora slot vazio
+            }
             const tr = document.createElement('tr');
 
             const tdTime = document.createElement('td');

@@ -13,6 +13,11 @@ from .models import Device, Sensor, SensorType
 # Create your views here.
 
 def get_chart_data(device, sensor_type, last_10min, now):
+    interval = 5  # segundos
+    total_seconds = int((now - last_10min).total_seconds())
+    total_slots = total_seconds // interval  # ~120
+
+    # Busca dados reais
     sensors = (
         Sensor.objects
         .filter(
@@ -25,24 +30,43 @@ def get_chart_data(device, sensor_type, last_10min, now):
         .values_list("created_at", "value")
     )
 
-    chart_data = []
+    # Indexar por slot
+    slot_map = {}
 
     for created_at, value in sensors:
-        # Definir cor direto no ponto (sem agregação)
-        if value == 0:
-            color = "black"
-        elif value > 225:
-            color = "red"
-        elif value < 215:
-            color = "yellow"
-        else:
-            color = "green"
+        delta = int((created_at - last_10min).total_seconds())
+        slot_index = delta // interval
+        slot_map[slot_index] = (created_at, value)
 
-        chart_data.append({
-            "time": created_at.strftime("%d/%m/%Y %H:%M:%S"),
-            "value": round(value, 2),
-            "color": color
-        })
+    chart_data = []
+
+    for i in range(total_slots + 1):
+        slot_time = last_10min + timedelta(seconds=i * interval)
+
+        if i in slot_map:
+            created_at, value = slot_map[i]
+
+            if value == 0:
+                color = "black"
+            elif value > 225:
+                color = "red"
+            elif value < 215:
+                color = "yellow"
+            else:
+                color = "green"
+
+            chart_data.append({
+                "time": created_at.strftime("%d/%m/%Y %H:%M:%S"),
+                "value": round(value, 2),
+                "color": color
+            })
+        else:
+            # SLOT VAZIO
+            chart_data.append({
+                "time": slot_time.strftime("%d/%m/%Y %H:%M:%S"),
+                "value": None,
+                "color": None
+            })
 
     return chart_data
 
@@ -82,7 +106,8 @@ def home(request):
             .filter(
                 device=device,
                 sensor_type=sensor_type,
-                created_at__gte=last_10min
+                created_at__gte=last_10min,
+                value__gt=0
             )
             .aggregate(
                 min_10min=Min("value"),
