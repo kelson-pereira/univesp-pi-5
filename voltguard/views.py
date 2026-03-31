@@ -118,16 +118,15 @@ def floor_time(dt, seconds=10):
         microseconds=dt.microsecond
     )
 
-def home(request):
+def get_devices_data():
     now = floor_time(timezone.now(), 10)
     last_10min = now - timedelta(minutes=10)
 
     try:
         sensor_type = SensorType.objects.get(name="voltA")
     except SensorType.DoesNotExist:
-        return render(request, "home.html", {"devices": []})
+        return []
 
-    # Subquery para pegar o último valor de cada device
     last_value_subquery = (
         Sensor.objects
         .filter(
@@ -139,16 +138,10 @@ def home(request):
         .values("value")[:1]
     )
 
-    # Devices anotados com último valor
-    devices = (
-        Device.objects
-        .annotate(current_value=Subquery(last_value_subquery))
-    )
-
+    devices = Device.objects.annotate(current_value=Subquery(last_value_subquery))
     devices_data = []
 
     for device in devices:
-
         stats = (
             Sensor.objects
             .filter(
@@ -176,13 +169,10 @@ def home(request):
         if current is not None:
             if current > 225:
                 tensao = "ELEVADA"
-            if current < 215:
+            elif current < 215:
                 tensao = "BAIXA"
 
-        # Gerar dados do gráfico (últimos 10 minutos) - Slot de 10s para suavisar e prevenir falhas de leitura
         chart_data = get_chart_data(device, sensor_type, last_10min, now)
-
-        # Gerar dados da tabela (últimos 10 minutos)
         table_data = get_table_data(device, sensor_type, last_10min, now)
 
         devices_data.append({
@@ -193,15 +183,31 @@ def home(request):
             "max_10min": round(stats["max_10min"], 2) if stats["max_10min"] else None,
             "unit": sensor_type.unit,
             "tensao": tensao,
-            "chart_data": json.dumps(chart_data),
+            "chart_data": chart_data,
             "chart_min": chart_min,
             "chart_max": chart_max,
-            "table_data": json.dumps(table_data),
+            "table_data": table_data,
         })
 
-    return render(request, "home.html", {
-        "devices": devices_data
-    })
+    return devices_data
+
+
+def home(request):
+    raw_data = get_devices_data()
+
+    devices_data = []
+    for d in raw_data:
+        device_copy = dict(d)
+        device_copy["chart_data"] = json.dumps(d["chart_data"])
+        device_copy["table_data"] = json.dumps(d["table_data"])
+        devices_data.append(device_copy)
+
+    return render(request, "home.html", {"devices": devices_data})
+
+
+def dashboard_data(request):
+    devices = get_devices_data()
+    return JsonResponse({"devices": devices})
 
 @require_POST
 def delete_device(request, mac):
