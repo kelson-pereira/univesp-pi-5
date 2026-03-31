@@ -14,11 +14,14 @@
         <img src="{% static 'imagens/voltguard.svg' %}" alt="VoltGuard" style="max-width: 220px;" />
     </div>
 
-    <p class="text-center text-light opacity-75 mb-3">Pontos de Medição</p>
+    <p class="text-center text-light opacity-75 mb-3">
+        Pontos de Medição
+        <span id="last-updated" class="d-block text-muted opacity-50" style="font-size: 0.7rem;"></span>
+    </p>
 
     <div class="row g-6 justify-content-center">
         {% for device in devices %}
-        <div class="col-md-6">
+        <div class="col-md-6" data-device-id="{{ device.id }}">
             <div class="card border-0 shadow-lg h-100 mb-4">
                 <div class="card-body position-relative pt-2">
                     <div class="card-actions position-absolute top-0 end-0 p-2">
@@ -40,8 +43,9 @@
                         <div class="mb-2 text-muted"><small><i class="bi bi-cpu-fill me-2"></i><span class="lh-sm fw-normal">{{device.id}}</span></small></div>
                     </div>
                     {% if device.current is not None %}
+                        <div data-role="data-section">
                         <div class="d-flex flex-row align-items-center justify-content-center mb-3">
-                            <div class="d-flex align-self-stretch align-items-center fs-1 fw-bold text-end text-white px-2 rounded-start-3
+                            <div data-role="voltage-badge" class="d-flex align-self-stretch align-items-center fs-1 fw-bold text-end text-white px-2 rounded-start-3
                                 {% if device.tensao == 'ELEVADA' %}
                                     bg-danger
                                 {% elif device.tensao == 'BAIXA' %}
@@ -49,11 +53,11 @@
                                 {% else %}
                                     bg-success
                                 {% endif %}">
-                                {{ device.current | floatformat:2 }}
+                                <span data-role="current-value">{{ device.current | floatformat:2 }}</span>
                             </div>
                             <div class="d-flex flex-column align-self-stretch bg-body-secondary px-2">
-                                <small class="h-50 align-content-end lh-sm"><strong>Máx:</strong> {{ device.max_10min | floatformat:2 }}</small>
-                                <small class="h-50 align-content-start lh-sm"><strong>Mín:</strong> {{ device.min_10min | floatformat:2 }}</small>
+                                <small class="h-50 align-content-end lh-sm"><strong>Máx:</strong> <span data-role="max-value">{{ device.max_10min | floatformat:2 }}</span></small>
+                                <small class="h-50 align-content-start lh-sm"><strong>Mín:</strong> <span data-role="min-value">{{ device.min_10min | floatformat:2 }}</span></small>
                             </div>
                             <div class="align-self-stretch align-content-center text-white fw-semibold bg-black px-2 rounded-end-3">
                                 {{ device.unit }}
@@ -90,13 +94,46 @@
                                 </table>
                             </div>
                         </div>
-                        <!-- Fim do conteúdo quando há dados -->
+                        </div><!-- /data-section -->
+                        <div data-role="no-data-section" class="d-none">
+                            <div class="d-flex flex-column align-items-center justify-content-center mt-4 text-muted" style="min-height: 190px;">
+                                <span class="text-dark badge bg-warning">Sem dados recentes disponíveis</span>
+                                <div class="mt-4 text-center w-75">Verifique se a fonte de alimentação está ativa e se o dispositivo está conectado à Internet.</div>
+                            </div>
+                        </div>
                     {% else %}
-                        <div class="d-flex flex-column align-items-center justify-content-center mt-4 text-muted" style="min-height: 190px;">
-                            <span class="text-dark badge bg-warning">
-                                Sem dados recentes disponíveis
-                            </span>
-                            <div class="mt-4 text-center w-75">Verifique se a fonte de alimentação está ativa e se o dispositivo está conectado à Internet.</div>
+                        <div data-role="data-section" class="d-none">
+                            <div class="d-flex flex-row align-items-center justify-content-center mb-3">
+                                <div data-role="voltage-badge" class="d-flex align-self-stretch align-items-center fs-1 fw-bold text-end text-white px-2 rounded-start-3 bg-success">
+                                    <span data-role="current-value">--</span>
+                                </div>
+                                <div class="d-flex flex-column align-self-stretch bg-body-secondary px-2">
+                                    <small class="h-50 align-content-end lh-sm"><strong>Máx:</strong> <span data-role="max-value">--</span></small>
+                                    <small class="h-50 align-content-start lh-sm"><strong>Mín:</strong> <span data-role="min-value">--</span></small>
+                                </div>
+                                <div class="align-self-stretch align-content-center text-white fw-semibold bg-black px-2 rounded-end-3">
+                                    {{ device.unit }}
+                                </div>
+                            </div>
+                            <div class="mt-2 overflow-x-auto" style="height: 100px;">
+                                <svg class="device-chart" data-device-id="{{ device.id }}" data-chart-min="200" data-chart-max="240" width="100%" height="100%" preserveAspectRatio="none"></svg>
+                            </div>
+                            <small class="d-block text-center text-muted opacity-50 mt-2">Últimos 10 minutos</small>
+                            <div class="mt-2">
+                                <div class="table-toggle text-center text-primary small" onclick="toggleTable(this)">▼ Ver dados</div>
+                                <div class="table-container collapsed">
+                                    <table class="table table-sm table-striped mt-2 mb-0">
+                                        <thead><tr><th>Data/Hora</th><th>Tensão</th><th>Status</th></tr></thead>
+                                        <tbody class="chart-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div data-role="no-data-section">
+                            <div class="d-flex flex-column align-items-center justify-content-center mt-4 text-muted" style="min-height: 190px;">
+                                <span class="text-dark badge bg-warning">Sem dados recentes disponíveis</span>
+                                <div class="mt-4 text-center w-75">Verifique se a fonte de alimentação está ativa e se o dispositivo está conectado à Internet.</div>
+                            </div>
                         </div>
                     {% endif %}
                 </div>
@@ -484,6 +521,85 @@
                 .catch(() => alert('Erro de conexão'));
         });
     });
+
+    // ===============================
+    // ATUALIZAÇÃO AUTOMÁTICA VIA AJAX
+    // ===============================
+    (function () {
+        const POLL_INTERVAL = 10000;
+
+        function pollDashboard() {
+            fetch('/api/dashboard/')
+                .then(res => res.json())
+                .then(data => {
+                    const devices = data.devices || [];
+
+                    // Se a quantidade de dispositivos mudou, recarrega a página
+                    const currentCards = document.querySelectorAll('[data-device-id].col-md-6');
+                    const hasNewDevice = devices.some(d => !document.querySelector(`.col-md-6[data-device-id="${d.id}"]`));
+                    if (hasNewDevice || currentCards.length !== devices.length) {
+                        location.reload();
+                        return;
+                    }
+
+                    devices.forEach(updateDeviceCard);
+
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString('pt-BR');
+                    const el = document.getElementById('last-updated');
+                    if (el) el.textContent = `Atualizado às ${timeStr}`;
+                })
+                .catch(err => console.warn('Falha ao atualizar dashboard:', err));
+        }
+
+        function updateDeviceCard(device) {
+            const card = document.querySelector(`.col-md-6[data-device-id="${device.id}"]`);
+            if (!card) return;
+
+            const dataSection = card.querySelector('[data-role="data-section"]');
+            const noDataSection = card.querySelector('[data-role="no-data-section"]');
+
+            if (device.current === null || device.current === undefined) {
+                dataSection && dataSection.classList.add('d-none');
+                noDataSection && noDataSection.classList.remove('d-none');
+                return;
+            }
+
+            noDataSection && noDataSection.classList.add('d-none');
+            dataSection && dataSection.classList.remove('d-none');
+
+            // Atualiza badge de cor e valor atual
+            const badge = card.querySelector('[data-role="voltage-badge"]');
+            if (badge) {
+                badge.classList.remove('bg-danger', 'bg-warning', 'bg-success');
+                if (device.tensao === 'ELEVADA') badge.classList.add('bg-danger');
+                else if (device.tensao === 'BAIXA') badge.classList.add('bg-warning');
+                else badge.classList.add('bg-success');
+            }
+
+            const currentEl = card.querySelector('[data-role="current-value"]');
+            if (currentEl) currentEl.textContent = device.current.toFixed(2);
+
+            const maxEl = card.querySelector('[data-role="max-value"]');
+            if (maxEl) maxEl.textContent = device.max_10min !== null ? device.max_10min.toFixed(2) : '--';
+
+            const minEl = card.querySelector('[data-role="min-value"]');
+            if (minEl) minEl.textContent = device.min_10min !== null ? device.min_10min.toFixed(2) : '--';
+
+            // Atualiza gráfico
+            const svg = card.querySelector('.device-chart');
+            if (svg) {
+                svg.setAttribute('data-chart-min', device.chart_min);
+                svg.setAttribute('data-chart-max', device.chart_max);
+                renderChart(svg, device.chart_data, device.chart_min, device.chart_max);
+                renderTable(svg, device.table_data);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setInterval(pollDashboard, POLL_INTERVAL);
+        });
+    })();
 
 </script>
 {% endblock %}

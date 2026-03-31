@@ -26,4 +26,5 @@ urlpatterns = [
     path("device/<str:mac>/edit_name/", views.edit_device_name, name="edit_device_name"),
     path("device/<str:mac>/delete/", views.delete_device, name="delete_device"),
     path("update/", views.update, name="update"),
+    path("api/dashboard/", views.dashboard_data, name="dashboard_data"),
 ]
