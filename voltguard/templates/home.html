@@ -231,11 +231,11 @@
             const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
             let label = '';
             if (item.value === null || item.value === undefined) {
-                label = `${item.time} - Sem leitura`;
+                label = `Sem leitura - ${item.time}`;
             } else if (item.value === 0) {
-                label = `${item.time} - Sem tensão`;
+                label = `Sem tensão - ${item.time}`;
             } else {
-                label = `${item.time} - ${item.value} Volts`;
+                label = `${item.value} Volts - ${item.time}`;
             }
             title.textContent = label;
             rect.appendChild(title);
