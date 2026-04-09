@@ -97,9 +97,9 @@ def get_table_data(device, sensor_type, last_10min, now):
 
         if value == 0:
             color = "black"
-        elif value > 225:
+        elif value > 231:
             color = "red"
-        elif value < 215:
+        elif value < 202:
             color = "yellow"
         else:
             color = "green"
