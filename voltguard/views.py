@@ -167,9 +167,9 @@ def get_devices_data():
 
         tensao = "NORMAL"
         if current is not None:
-            if current > 225:
+            if current > 231:
                 tensao = "ELEVADA"
-            elif current < 215:
+            elif current < 202:
                 tensao = "BAIXA"
 
         chart_data = get_chart_data(device, sensor_type, last_10min, now)
